@@ -24,7 +24,7 @@ var builder = WebApplication.CreateBuilder(args);
 Console.WriteLine($"Current Environment: {builder.Environment.EnvironmentName}");
 
 // Database connection string retrieved from environment variables
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "DefaultConnection";
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "DATABASE_URL";
 
 //for heroku deploy
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
