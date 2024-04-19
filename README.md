@@ -1,32 +1,32 @@
 # The Library of Alexandria
 
-Bem-vindo ao repositório "The Library of Alexandria"! Este projeto é parte de um ecossistema de e-commerce destinado aos aficionados por Magic: The Gathering. "The Library of Alexandria" é o serviço de API principal, responsável pela gestão de produtos, usuários, pedidos e muito mais. Este repositório abriga o backend do projeto, enquanto há outros repositórios para o frontend, microserviços de pagamento, entrega e outros serviços relacionados.
+Welcome to "The Library of Alexandria" repository! This project is part of an e-commerce ecosystem aimed at Magic: The Gathering enthusiasts. "The Library of Alexandria" is the main API service, responsible for managing products, users, orders, and more. This repository hosts the backend of the project, while there are other repositories for the frontend, payment microservices, delivery, and other related services.
 
-## Funcionalidades Principais:
+## Key Features:
 
-- **Gestão de Produtos:** Cadastro, edição e remoção de produtos, com informações detalhadas, como nome, descrição, preço, disponibilidade, etc.
-- **Gestão de Usuários:** Cadastro e autenticação de usuários, com controle de permissões e autenticação segura.
-- **Gestão de Pedidos:** Criação, atualização e visualização de pedidos, com informações sobre produtos, pagamento, entrega, etc.
-- **Autenticação e Segurança:** Sistema de autenticação seguro com JWT (JSON Web Tokens) e permissões de acesso.
-- **Integração com Microserviços:** Integração com microserviços de pagamento, entrega e outros serviços relacionados.
+- **Product Management:** Registration, editing, and removal of products, with detailed information such as name, description, price, availability, etc.
+- **User Management:** User registration and authentication, with permission control and secure authentication.
+- **Order Management:** Creation, update, and visualization of orders, with information about products, payment, delivery, etc.
+- **Authentication and Security:** Secure authentication system with JWT (JSON Web Tokens) and access permissions.
+- **Integration with Microservices:** Integration with payment microservices, delivery, and other related services.
 
-## Tecnologias Utilizadas:
+## Technologies Used:
 
-- **ASP.NET Core:** Framework web para construção de aplicativos modernos.
-- **Entity Framework Core:** ORM (Object-Relational Mapping) para mapeamento de objetos em banco de dados.
-- **PostgreSQL:** Banco de dados relacional para armazenamento de dados.
-- **JWT (JSON Web Tokens):** Método de autenticação seguro para comunicação entre cliente e servidor.
-- **Swagger:** Ferramenta de documentação para APIs.
+- **ASP.NET Core:** Web framework for building modern applications.
+- **Entity Framework Core:** ORM (Object-Relational Mapping) for mapping objects to databases.
+- **PostgreSQL:** Relational database for data storage.
+- **JWT (JSON Web Tokens):** Secure authentication method for communication between client and server.
+- **Swagger:** Documentation tool for APIs.
 
-## Como Contribuir:
+## How to Contribute:
 
-Se você gostaria de contribuir para o desenvolvimento do projeto "The Library of Alexandria", siga os passos abaixo:
+If you would like to contribute to the development of the "The Library of Alexandria" project, follow the steps below:
 
-1. **Faça um Fork** deste repositório.
-2. **Clone o repositório forkado:** `git clone https://github.com/seu-usuario/the-library-of-alexandria.git`
-3. **Crie uma nova branch:** `git checkout -b feature/nova-feature`
-4. **Faça suas alterações e commit:** `git commit -am 'Adicione uma nova feature'`
-5. **Faça o push da branch:** `git push origin feature/nova-feature`
-6. **Envie um Pull Request** para a branch principal do repositório.
+1. **Fork this repository.**
+2. **Clone the forked repository:** `git clone https://github.com/your-user/the-library-of-alexandria.git`
+3. **Create a new branch:** `git checkout -b feature/new-feature`
+4. **Make your changes and commit:** `git commit -am 'Add a new feature'`
+5. **Push the branch:** `git push origin feature/new-feature`
+6. **Send a Pull Request** to the main branch of the repository.
 
-Agradecemos suas contribuições para tornar o "The Library of Alexandria" ainda melhor!
+We appreciate your contributions to making "The Library of Alexandria" even better!
