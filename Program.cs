@@ -9,6 +9,8 @@ using TheLibraryOfAlexandria.Data;
 using TheLibraryOfAlexandria.Services;
 using TheLibraryOfAlexandria.Utils;
 using TheLibraryOfAlexandria.Middlewares;
+using Sentry.Extensions.Logging.Extensions.DependencyInjection;
+using Sentry;
 //using dotenv.net;
 
 
@@ -23,6 +25,15 @@ Console.WriteLine($"Current Environment: {builder.Environment.EnvironmentName}")
 
 // Database connection string retrieved from environment variables
 var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "DefaultConnection";
+
+//for heroku deploy
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseKestrel()
+      .ConfigureKestrel(serverOptions =>
+      {
+          serverOptions.ListenAnyIP(int.Parse(port));
+      });
+
 
 // Registering services
 builder.Services.AddMemoryCache(); // Add memory cache services to the application
@@ -69,26 +80,18 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SameSite = SameSiteMode.Strict; // Prevents the browser from sending this cookie along with cross-site requests
 });
 
+
+// Configuration for Sentry Logs
+builder.Logging.AddSentry(options =>
+{
+    options.Dsn = Environment.GetEnvironmentVariable("SENTRY_DSN");
+    options.Debug = true; 
+    options.TracesSampleRate = 1.0; 
+});
+
+
 // Rate limiting setup to prevent abuse of API endpoints
 builder.Services.AddInMemoryRateLimiting();
-builder.Services.Configure<IpRateLimitOptions>(options =>
-{
-    options.GeneralRules = new List<RateLimitRule>
-    {
-        new RateLimitRule
-        {
-            Endpoint = "POST:/api/users",
-            Limit = 5,
-            Period = "5m"
-        },
-        new RateLimitRule
-        {
-            Endpoint = "*:/api/*",
-            Limit = 100,
-            Period = "1m"
-        }
-    };
-});
 
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
@@ -153,6 +156,7 @@ app.Use(async (context, next) =>
 
     await next();
 });
+
 
 
 app.Run();

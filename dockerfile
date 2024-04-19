@@ -1,17 +1,17 @@
-# Use the Microsoft's official build .NET image.
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Base image with .NET 8 SDK
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /app
 
-# Copie csproj e restore as dependências
+# Copy csproj and restore as distinct layers
 COPY *.csproj ./
 RUN dotnet restore
 
-# Copie tudo o resto e construa o aplicativo
+# Copy everything else and build
 COPY . ./
 RUN dotnet publish -c Release -o out
 
-# Use Microsoft's official runtime .NET image.
+# Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/out ./
-ENTRYPOINT ["dotnet", "YourAppName.dll"]
+COPY --from=build-env /app/out .
+ENTRYPOINT ["dotnet", "thelibraryofalexandria.dll"]
