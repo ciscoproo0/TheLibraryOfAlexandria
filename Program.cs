@@ -9,11 +9,11 @@ using TheLibraryOfAlexandria.Data;
 using TheLibraryOfAlexandria.Services;
 using TheLibraryOfAlexandria.Utils;
 using TheLibraryOfAlexandria.Middlewares;
-using dotenv.net;
+//using dotenv.net;
 
 
 // Load environment variables from .env file
-DotEnv.Load();
+//DotEnv.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
