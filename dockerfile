@@ -1,20 +1,17 @@
-FROM mcr.microsoft.com/dotnet/aspnet:latest AS base
+# Use the Microsoft's official build .NET image.
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:latest AS build
-WORKDIR /src
-COPY ["MyApp/MyApp.csproj", "MyApp/"]
-RUN dotnet restore "MyApp/MyApp.csproj"
-COPY . .
-WORKDIR "/src/MyApp"
-RUN dotnet build "MyApp.csproj" -c Release -o /app/build
+# Copie csproj e restore as dependências
+COPY *.csproj ./
+RUN dotnet restore
 
-FROM build AS publish
-RUN dotnet publish "MyApp.csproj" -c Release -o /app/publish
+# Copie tudo o resto e construa o aplicativo
+COPY . ./
+RUN dotnet publish -c Release -o out
 
-FROM base AS final
+# Use Microsoft's official runtime .NET image.
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "MyApp.dll"]
+COPY --from=build /app/out ./
+ENTRYPOINT ["dotnet", "YourAppName.dll"]
