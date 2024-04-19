@@ -1,0 +1,46 @@
+# Automatically generated files and folders
+bin/
+obj/
+*.suo
+*.user
+*.vscode/
+*.vs/
+*.sln.docstates
+
+# Build and logs files
+*.apk
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.log
+*.xlog
+*.xlog.*
+
+# Packages and dependencies
+packages/
+node_modules/
+bower_components/
+jspm_packages/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Visual Studio configuration files
+.vscode/
+.vs/
+
+# Editor-specific files
+*~
+
+# Operating system-specific files
+.DS_Store
+Thumbs.db
+
+# Entity Framework migration files
+**/Migrations/*
+# Environment variables
+.env
