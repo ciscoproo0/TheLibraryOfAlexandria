@@ -44,3 +44,6 @@ Thumbs.db
 **/Migrations/*
 # Environment variables
 .env
+
+# Env configurations, only pushed to gcp
+app.yaml
