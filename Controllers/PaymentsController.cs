@@ -14,6 +14,18 @@ public class PaymentController : ControllerBase
         _paymentService = paymentService;
     }
 
+    [Authorize(Roles = "Admin, ServiceAccount, SuperAdmin")]
+    [HttpGet]
+    public async Task<ActionResult<ServiceResponse<List<Payment>>>> GetAll()
+    {
+        var response = await _paymentService.GetAllPaymentsAsync();
+        if (!response.Success)
+        {
+            return BadRequest(response.Message);
+        }
+        return Ok(response);
+    }
+
     [HttpPost]
     public async Task<ActionResult<ServiceResponse<Payment>>> CreatePayment(Payment payment)
     {

@@ -1,6 +1,7 @@
 using TheLibraryOfAlexandria.Data;
 using TheLibraryOfAlexandria.Models;
 using TheLibraryOfAlexandria.Utils;
+using Microsoft.EntityFrameworkCore;
 
 public class PaymentService : IPaymentService
 {
@@ -22,6 +23,22 @@ public class PaymentService : IPaymentService
         catch (Exception ex)
         {
             return new ServiceResponse<Payment> { Success = false, Message = $"An error occurred while creating the payment: {ex.Message}" };
+        }
+    }
+
+    public async Task<ServiceResponse<List<Payment>>> GetAllPaymentsAsync()
+    {
+        try
+        {
+            var list = await _context.Payments
+                .Include(p => p.Order)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+            return new ServiceResponse<List<Payment>> { Data = list };
+        }
+        catch (Exception ex)
+        {
+            return new ServiceResponse<List<Payment>> { Success = false, Message = ex.Message };
         }
     }
 
@@ -49,7 +66,7 @@ public class PaymentService : IPaymentService
             var payment = await _context.Payments.FindAsync(paymentId);
             if (payment == null)
             {
-                return new ServiceResponse<Payment> { Success = false, Message = "Payment not found." };
+                return new ServiceResponse<Payment> { Success = false, Message = "Payment not found" };
             }
 
             payment.Amount = updatedPayment.Amount;
@@ -58,13 +75,12 @@ public class PaymentService : IPaymentService
             payment.TransactionId = updatedPayment.TransactionId;
             payment.CompletedAt = updatedPayment.CompletedAt;
 
-            _context.Payments.Update(payment);
             await _context.SaveChangesAsync();
             return new ServiceResponse<Payment> { Data = payment };
         }
         catch (Exception ex)
         {
-            return new ServiceResponse<Payment> { Success = false, Message = $"An error occurred while updating the payment: {ex.Message}" };
+            return new ServiceResponse<Payment> { Success = false, Message = $"An error occurred while updating the payment. {ex.Message}" };
         }
     }
 
@@ -74,16 +90,15 @@ public class PaymentService : IPaymentService
         {
             var payment = await _context.Payments.FindAsync(paymentId);
             if (payment == null)
-            {
                 return new ServiceResponse<bool> { Success = false, Message = "Payment not found." };
-            }
+
             _context.Payments.Remove(payment);
             await _context.SaveChangesAsync();
-            return new ServiceResponse<bool> { Data = true, Message = "Payment deleted successfully." };
+            return new ServiceResponse<bool> { Data = true };
         }
         catch (Exception ex)
         {
-            return new ServiceResponse<bool> { Success = false, Message = $"An error occurred: {ex.Message}" };
+            return new ServiceResponse<bool> { Success = false, Message = ex.Message };
         }
     }
 }
