@@ -20,12 +20,7 @@ public class AuthenticationService : IAuthenticationService
         _context = context;
         _passwordUtils = passwordUtils;
         _configuration = configuration;
-        _key = _configuration["JWT_SECRET_KEY"];
-
-        if (string.IsNullOrWhiteSpace(_key))
-        {
-            throw new InvalidOperationException("JWT Key is not set in the configuration.");
-        }
+        _key = _configuration["JWT_SECRET_KEY"] ?? throw new InvalidOperationException("JWT_SECRET_KEY is not configured.");
     }
 
     public async Task<ServiceResponse<string>> AuthenticateAsync(string username, string password)

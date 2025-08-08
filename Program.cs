@@ -11,11 +11,11 @@ using TheLibraryOfAlexandria.Utils;
 using TheLibraryOfAlexandria.Middlewares;
 using Sentry.Extensions.Logging.Extensions.DependencyInjection;
 using Sentry;
-//using dotenv.net;
+using dotenv.net;
 
 
 // Load environment variables from .env file
-//DotEnv.Load();
+DotEnv.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,7 +85,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Logging.AddSentry(options =>
 {
     options.Dsn = Environment.GetEnvironmentVariable("SENTRY_DSN");
-    options.Debug = true; 
+    // options.Debug = true; 
+    options.Debug = false; 
     options.TracesSampleRate = 1.0; 
 });
 
@@ -114,6 +115,15 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        builder => builder
+            .AllowAnyOrigin() //restrict to the specific origin in the future
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
 // Swagger documentation setup
 builder.Services.AddSwaggerGen(c =>
 {
@@ -129,17 +139,18 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage(); // Use developer exception page to show detailed error info
 }
 
-app.UseRouting(); // Use routing
 app.UseIpRateLimiting();
 app.UseExceptionHandler("/Error"); // Use built-in error handler
 app.UseHttpsRedirection(); // Redirect HTTP to HTTPS
+app.UseRouting(); // Use routing
+app.UseCors("AllowFrontend"); // Use CORS policy defined above
 app.UseAuthentication(); // Use authentication middleware
-app.UseMiddleware<JwtMiddleware>(); // Use custom JWT middleware
 app.UseAuthorization(); // Use authorization middleware
-
+app.UseMiddleware<JwtMiddleware>(); // Use custom JWT middleware
 app.MapControllers(); // Map controller endpoints
 
-app.UseSwagger(); // Use Swagger for API documentation
+
+app.UseSwagger(); // Use Swagger for API documentation, access http://host:port/swagger for visualization and http://host:port/swagger/v1/swagger.json for JSON/schema
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "The Library Of Alexandria - A Magic:The Gathering project");
