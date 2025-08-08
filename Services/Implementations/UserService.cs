@@ -47,12 +47,18 @@ public class UserService : IUserService
     {
         try
         {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == user.Username);
-
-            if (existingUser != null)
+            // Verificar se username já existe
+            var existingUserByUsername = await _context.Users.FirstOrDefaultAsync(u => u.Username == user.Username);
+            if (existingUserByUsername != null)
             {
-                return new ServiceResponse<User> { Success = false, Message = "Email already exists"};
+                return new ServiceResponse<User> { Success = false, Message = "Username already exists" };
+            }
 
+            // Verificar se email já existe
+            var existingUserByEmail = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
+            if (existingUserByEmail != null)
+            {
+                return new ServiceResponse<User> { Success = false, Message = "Email already exists" };
             }
 
             user.PasswordHash = _passwordUtils.HashPassword(user.PasswordHash);
