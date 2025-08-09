@@ -195,14 +195,18 @@ public class OrderService : IOrderService
             var requestedStatus = updatedOrder.Status?.Trim();
             if (!string.IsNullOrWhiteSpace(requestedStatus) && requestedStatus.Equals("completed", StringComparison.OrdinalIgnoreCase))
             {
-                // Validate: to set order as completed, payment must be Completed and shipping Delivered
-                var paymentForOrder = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == order.Id);
+                // Validate using fresh reads to avoid stale tracked entities
+                var paymentForOrder = await _context.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.OrderId == order.Id);
+                var latestShippingStatus = await _context.ShippingInfos.AsNoTracking()
+                    .Where(s => s.OrderId == order.Id)
+                    .Select(s => (ShippingStatus?)s.Status)
+                    .FirstOrDefaultAsync();
+
                 var paymentState = paymentForOrder?.Status.ToString() ?? "None";
-                var targetShippingStatus = updatedOrder.ShippingInfo?.Status ?? order.ShippingInfo?.Status;
-                var shippingState = targetShippingStatus?.ToString() ?? "None";
+                var shippingState = latestShippingStatus?.ToString() ?? "None";
 
                 bool isPaymentCompleted = paymentForOrder != null && paymentForOrder.Status == PaymentStatus.Completed;
-                bool isShippingDelivered = targetShippingStatus.HasValue && targetShippingStatus.Value == ShippingStatus.Delivered;
+                bool isShippingDelivered = latestShippingStatus.HasValue && latestShippingStatus.Value == ShippingStatus.Delivered;
                 if (!(isPaymentCompleted && isShippingDelivered))
                 {
                     response.Success = false;
