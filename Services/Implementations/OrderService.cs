@@ -12,9 +12,7 @@ public class OrderService : IOrderService
         _context = context;
     }
 
-    public async Task<ServiceResponse<PaginatedResult<Order>>> GetAllOrdersAsync(
-        int page,
-        int pageSize,
+    public async Task<ServiceResponse<List<Order>>> GetAllOrdersAsync(
         int? userId,
         string? status,
         decimal? minTotalPrice,
@@ -67,24 +65,17 @@ public class OrderService : IOrderService
 
             query = query.OrderByDescending(o => o.CreatedAt);
 
-            var total = await query.CountAsync();
-            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            var items = await query.ToListAsync();
 
-            return new ServiceResponse<PaginatedResult<Order>>
+            return new ServiceResponse<List<Order>>
             {
-                Data = new PaginatedResult<Order>
-                {
-                    Items = items,
-                    Total = total,
-                    Page = page,
-                    PageSize = pageSize
-                },
-                Message = "Retrieved orders page successfully."
+                Data = items,
+                Message = "Retrieved orders successfully."
             };
         }
         catch (Exception ex)
         {
-            return new ServiceResponse<PaginatedResult<Order>>
+            return new ServiceResponse<List<Order>>
             {
                 Success = false,
                 Message = $"An error occurred while retrieving orders: {ex.Message}"
@@ -131,7 +122,7 @@ public class OrderService : IOrderService
         {
             decimal totalPrice = 0;
 
-            // Process each line of the order
+            // Process each order line
             foreach (var item in order.OrderItems)
             {
                 var product = await _context.Products.FindAsync(item.ProductId);
@@ -152,7 +143,7 @@ public class OrderService : IOrderService
             // Ensure shipping info is linked correctly to the order being created
             if (order.ShippingInfo != null)
             {
-                order.ShippingInfo.OrderId = order.Id; // This ensures the FK constraint is satisfied
+                order.ShippingInfo.OrderId = order.Id; // Ensures FK constraint is satisfied
             }
 
             totalPrice += order.ShippingInfo.ShippingCost;
@@ -191,7 +182,7 @@ public class OrderService : IOrderService
                 return response;
             }
 
-            // Requested status change (Order-level only). We do not update items or shipping here.
+            // Requested status change (Order-level only). Items or shipping are not updated here.
             var requestedStatus = updatedOrder.Status?.Trim();
             if (!string.IsNullOrWhiteSpace(requestedStatus) && requestedStatus.Equals("completed", StringComparison.OrdinalIgnoreCase))
             {
@@ -221,7 +212,7 @@ public class OrderService : IOrderService
                 order.Status = updatedOrder.Status;
             }
             order.UpdatedAt = DateTime.UtcNow;
-            // Note: TotalPrice recomputation and Shipping/Items updates are handled by their dedicated endpoints/services.
+            // Note: Total price recomputation and Shipping/Items updates are handled by their dedicated endpoints/services.
 
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();

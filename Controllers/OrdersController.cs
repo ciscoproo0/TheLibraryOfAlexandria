@@ -18,12 +18,10 @@ namespace TheLibraryOfAlexandria.Controllers
             _orderService = orderService;
         }
 
-        // GET: api/Orders (paginated, mandatory)
+        // GET: api/Orders (no pagination; filters preserved)
         [Authorize(Roles = "Customer, Admin, SuperAdmin")]
         [HttpGet]
-        public async Task<ActionResult<ServiceResponse<TheLibraryOfAlexandria.Utils.PaginatedResult<Order>>>> GetOrders(
-            [FromQuery] int page,
-            [FromQuery] int pageSize,
+        public async Task<ActionResult<ServiceResponse<List<Order>>>> GetOrders(
             [FromQuery] int? userId,
             [FromQuery] string? status,
             [FromQuery] decimal? minTotalPrice,
@@ -34,16 +32,7 @@ namespace TheLibraryOfAlexandria.Controllers
             [FromQuery] DateTime? updatedTo
         )
         {
-            if (page <= 0)
-            {
-                return BadRequest("Parameter 'page' must be greater than zero.");
-            }
-            if (pageSize != 25 && pageSize != 50 && pageSize != 100)
-            {
-                return BadRequest("Parameter 'pageSize' must be one of: 25, 50, 100.");
-            }
-
-            var response = await _orderService.GetAllOrdersAsync(page, pageSize, userId, status, minTotalPrice, maxTotalPrice, createdFrom, createdTo, updatedFrom, updatedTo);
+            var response = await _orderService.GetAllOrdersAsync(userId, status, minTotalPrice, maxTotalPrice, createdFrom, createdTo, updatedFrom, updatedTo);
             if (!response.Success)
             {
                 return BadRequest(response.Message);
@@ -76,7 +65,7 @@ namespace TheLibraryOfAlexandria.Controllers
                 catch {}
 
                 var order = response.Data;
-                // If shipping not present, ensure it goes as null (node empty)
+                // If shipping not present, ensure it goes as null (empty node)
                 var shipping = order.ShippingInfo; // may be null
 
                 return Ok(new
@@ -146,7 +135,7 @@ namespace TheLibraryOfAlexandria.Controllers
             {
                 return NotFound(response.Message);
             }
-            return NoContent(); // Retorna um status 204 No Content como resposta para indicar sucesso na deleção
+            return NoContent(); // Returns 204 No Content to indicate successful deletion
 
         }
     }

@@ -22,8 +22,8 @@ namespace TheLibraryOfAlexandria.Data
             modelBuilder.Entity<User>()
                 .Property(u => u.Role)
                 .HasConversion(
-                    v => v.ToString(),  // Converts UserRole to DB
-                    v => (UserRole)Enum.Parse(typeof(UserRole), v)); // Converts to string when reads from db
+                    v => v.ToString(),  // Converts UserRole to database
+                    v => (UserRole)Enum.Parse(typeof(UserRole), v)); // Converts string back to enum when reading from database
             modelBuilder.Entity<Payment>()
         .Property(p => p.Method)
         .HasConversion(
@@ -36,12 +36,27 @@ namespace TheLibraryOfAlexandria.Data
                     v => v.ToString(),
                     v => (PaymentStatus)Enum.Parse(typeof(PaymentStatus), v));
 
+            // Resilient conversion for ShippingStatus (tolerates null/invalid strings)
             modelBuilder.Entity<ShippingInfo>()
                 .Property(s => s.Status)
                 .HasConversion(
                     v => v.ToString(),
-                    v => (ShippingStatus)Enum.Parse(typeof(ShippingStatus), v, true))
+                    v => string.IsNullOrWhiteSpace(v)
+                        ? ShippingStatus.Preparing
+                        : v.ToLower() == "preparing" ? ShippingStatus.Preparing
+                        : v.ToLower() == "shipped" ? ShippingStatus.Shipped
+                        : v.ToLower() == "delivered" ? ShippingStatus.Delivered
+                        : v.ToLower() == "returned" ? ShippingStatus.Returned
+                        : v.ToLower() == "cancelled" ? ShippingStatus.Cancelled
+                        : ShippingStatus.Preparing)
                 .HasDefaultValue(ShippingStatus.Preparing);
+
+            // 1:1 relationship Order -> ShippingInfo with FK on ShippingInfo.OrderId
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.ShippingInfo)
+                .WithOne()
+                .HasForeignKey<ShippingInfo>(s => s.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
     }

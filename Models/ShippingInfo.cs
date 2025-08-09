@@ -18,7 +18,6 @@ namespace TheLibraryOfAlexandria.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         public int OrderId { get; set; }
-        [ForeignKey("OrderId")]
         public string Address { get; set; } = string.Empty;
         public string City { get; set; } = string.Empty;
         public string State { get; set; } = string.Empty;

@@ -16,9 +16,7 @@ public class PaymentController : ControllerBase
 
     [Authorize(Roles = "Admin, ServiceAccount, SuperAdmin")]
     [HttpGet]
-    public async Task<ActionResult<ServiceResponse<PaginatedResult<Payment>>>> Get(
-        [FromQuery] int page,
-        [FromQuery] int pageSize,
+    public async Task<ActionResult<ServiceResponse<List<Payment>>>> Get(
         [FromQuery] string? status = null,
         [FromQuery] string? method = null,
         [FromQuery] int? orderId = null,
@@ -34,12 +32,7 @@ public class PaymentController : ControllerBase
         [FromQuery] string? sortDir = null
     )
     {
-        if (page <= 0)
-            return BadRequest(new ServiceResponse<PaginatedResult<Payment>> { Success = false, Message = "Parameter 'page' must be greater than zero." });
-        if (pageSize != 25 && pageSize != 50 && pageSize != 100)
-            return BadRequest(new ServiceResponse<PaginatedResult<Payment>> { Success = false, Message = "Parameter 'pageSize' must be one of: 25, 50, 100." });
-
-        var resp = await _paymentService.GetPaymentsAsync(page, pageSize, status, method, orderId, userId, minAmount, maxAmount, createdFrom, createdTo, completedFrom, completedTo, transactionId, sortBy, sortDir);
+        var resp = await _paymentService.GetPaymentsAsync(status, method, orderId, userId, minAmount, maxAmount, createdFrom, createdTo, completedFrom, completedTo, transactionId, sortBy, sortDir);
         if (!resp.Success) return BadRequest(resp);
         return Ok(resp);
     }

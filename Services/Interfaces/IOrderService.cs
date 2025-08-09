@@ -3,9 +3,7 @@ using TheLibraryOfAlexandria.Utils;
 
 public interface IOrderService
 {
-    Task<ServiceResponse<PaginatedResult<Order>>> GetAllOrdersAsync(
-        int page,
-        int pageSize,
+    Task<ServiceResponse<List<Order>>> GetAllOrdersAsync(
         int? userId,
         string? status,
         decimal? minTotalPrice,

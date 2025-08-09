@@ -9,9 +9,7 @@ public interface IPaymentService
     Task<ServiceResponse<Payment>> UpdatePaymentAsync(int paymentId, Payment updatedPayment);
     Task<ServiceResponse<bool>> DeletePaymentAsync(int paymentId);
     Task<ServiceResponse<List<Payment>>> GetAllPaymentsAsync();
-    Task<ServiceResponse<PaginatedResult<Payment>>> GetPaymentsAsync(
-        int page,
-        int pageSize,
+    Task<ServiceResponse<List<Payment>>> GetPaymentsAsync(
         string? status,
         string? method,
         int? orderId,

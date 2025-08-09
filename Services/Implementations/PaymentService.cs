@@ -42,9 +42,7 @@ public class PaymentService : IPaymentService
         }
     }
 
-    public async Task<ServiceResponse<PaginatedResult<Payment>>> GetPaymentsAsync(
-        int page,
-        int pageSize,
+    public async Task<ServiceResponse<List<Payment>>> GetPaymentsAsync(
         string? status,
         string? method,
         int? orderId,
@@ -118,22 +116,12 @@ public class PaymentService : IPaymentService
                     break;
             }
 
-            int total = await query.CountAsync();
-            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-            return new ServiceResponse<PaginatedResult<Payment>>
-            {
-                Data = new PaginatedResult<Payment>
-                {
-                    Items = items,
-                    Total = total,
-                    Page = page,
-                    PageSize = pageSize
-                }
-            };
+            var items = await query.ToListAsync();
+            return new ServiceResponse<List<Payment>> { Data = items };
         }
         catch (Exception ex)
         {
-            return new ServiceResponse<PaginatedResult<Payment>> { Success = false, Message = ex.Message };
+            return new ServiceResponse<List<Payment>> { Success = false, Message = ex.Message };
         }
     }
 
