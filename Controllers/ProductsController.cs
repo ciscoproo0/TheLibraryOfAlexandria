@@ -18,9 +18,17 @@ namespace TheLibraryOfAlexandria.Controllers
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        public async Task<ActionResult<IEnumerable<Product>>> GetProducts(
+            [FromQuery] string? search,
+            [FromQuery] string? rarity,
+            [FromQuery] string? edition,
+            [FromQuery] decimal? minPrice,
+            [FromQuery] decimal? maxPrice,
+            [FromQuery] int? minStock,
+            [FromQuery] int? maxStock
+        )
         {
-            var result = await _productService.GetAllProductsAsync();
+            var result = await _productService.GetAllProductsAsync(search, rarity, edition, minPrice, maxPrice, minStock, maxStock);
             if (result.Success)
                 return Ok(result.Data);
             return NotFound(result.Message);

@@ -19,9 +19,14 @@ namespace TheLibraryOfAlexandria.Controllers
         // GET: api/Users
         [Authorize(Roles = "Admin, ServiceAccount, SuperAdmin")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers(
+            [FromQuery] string? search,
+            [FromQuery] string? role,
+            [FromQuery] DateTime? createdFrom,
+            [FromQuery] DateTime? createdTo
+        )
         {
-            var result = await _userService.GetAllUsersAsync();
+            var result = await _userService.GetAllUsersAsync(search, role, createdFrom, createdTo);
             if (result.Success)
                 return Ok(result.Data);
             return NotFound(result.Message);

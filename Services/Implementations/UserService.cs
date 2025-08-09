@@ -14,11 +14,39 @@ public class UserService : IUserService
         _passwordUtils = passwordUtils;
     }
 
-    public async Task<ServiceResponse<List<User>>> GetAllUsersAsync()
+    public async Task<ServiceResponse<List<User>>> GetAllUsersAsync(
+        string? search = null,
+        string? role = null,
+        DateTime? createdFrom = null,
+        DateTime? createdTo = null
+    )
     {
         try
         {
-            var users = await _context.Users.ToListAsync();
+            var query = _context.Users.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.ToLower();
+                query = query.Where(u => u.Username.ToLower().Contains(s) || u.Email.ToLower().Contains(s));
+            }
+
+            if (!string.IsNullOrWhiteSpace(role) && Enum.TryParse<UserRole>(role, true, out var parsedRole))
+            {
+                query = query.Where(u => u.Role == parsedRole);
+            }
+
+            if (createdFrom.HasValue)
+            {
+                query = query.Where(u => u.CreatedAt >= createdFrom.Value);
+            }
+            if (createdTo.HasValue)
+            {
+                query = query.Where(u => u.CreatedAt <= createdTo.Value);
+            }
+
+            query = query.OrderByDescending(u => u.CreatedAt);
+            var users = await query.ToListAsync();
             return new ServiceResponse<List<User>> { Data = users };
         }
         catch (Exception ex)
@@ -47,14 +75,14 @@ public class UserService : IUserService
     {
         try
         {
-            // Verificar se username já existe
+            // Check if username already exists
             var existingUserByUsername = await _context.Users.FirstOrDefaultAsync(u => u.Username == user.Username);
             if (existingUserByUsername != null)
             {
                 return new ServiceResponse<User> { Success = false, Message = "Username already exists" };
             }
 
-            // Verificar se email já existe
+            // Check if email already exists
             var existingUserByEmail = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
             if (existingUserByEmail != null)
             {

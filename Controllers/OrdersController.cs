@@ -18,7 +18,7 @@ namespace TheLibraryOfAlexandria.Controllers
             _orderService = orderService;
         }
 
-        // GET: api/Orders (no pagination; filters preserved)
+        // GET: api/Orders (filters preserved)
         [Authorize(Roles = "Customer, Admin, SuperAdmin")]
         [HttpGet]
         public async Task<ActionResult<ServiceResponse<List<Order>>>> GetOrders(

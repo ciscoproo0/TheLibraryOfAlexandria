@@ -12,11 +12,52 @@ public class ProductService : IProductService
         _context = context;
     }
 
-    public async Task<ServiceResponse<List<Product>>> GetAllProductsAsync()
+    public async Task<ServiceResponse<List<Product>>> GetAllProductsAsync(
+        string? search = null,
+        string? rarity = null,
+        string? edition = null,
+        decimal? minPrice = null,
+        decimal? maxPrice = null,
+        int? minStock = null,
+        int? maxStock = null
+    )
     {
         try
         {
-            var products = await _context.Products.ToListAsync();
+            var query = _context.Products.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(s) || p.Description.ToLower().Contains(s));
+            }
+            if (!string.IsNullOrWhiteSpace(rarity))
+            {
+                query = query.Where(p => p.Rarity == rarity);
+            }
+            if (!string.IsNullOrWhiteSpace(edition))
+            {
+                query = query.Where(p => p.Edition == edition);
+            }
+            if (minPrice.HasValue)
+            {
+                query = query.Where(p => p.Price >= minPrice.Value);
+            }
+            if (maxPrice.HasValue)
+            {
+                query = query.Where(p => p.Price <= maxPrice.Value);
+            }
+            if (minStock.HasValue)
+            {
+                query = query.Where(p => p.StockQuantity >= minStock.Value);
+            }
+            if (maxStock.HasValue)
+            {
+                query = query.Where(p => p.StockQuantity <= maxStock.Value);
+            }
+
+            query = query.OrderBy(p => p.Name);
+            var products = await query.ToListAsync();
             return new ServiceResponse<List<Product>> { Data = products };
         }
         catch (Exception ex)
