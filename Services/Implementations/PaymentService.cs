@@ -59,6 +59,23 @@ public class PaymentService : IPaymentService
         }
     }
 
+    public async Task<ServiceResponse<Payment>> GetPaymentByOrderIdAsync(int orderId)
+    {
+        try
+        {
+            var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == orderId);
+            if (payment == null)
+            {
+                return new ServiceResponse<Payment> { Success = false, Message = "Payment not found." };
+            }
+            return new ServiceResponse<Payment> { Data = payment };
+        }
+        catch (Exception ex)
+        {
+            return new ServiceResponse<Payment> { Success = false, Message = ex.Message };
+        }
+    }
+
     public async Task<ServiceResponse<Payment>> UpdatePaymentAsync(int paymentId, Payment updatedPayment)
     {
         try

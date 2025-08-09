@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TheLibraryOfAlexandria.Models;
 using TheLibraryOfAlexandria.Utils;
+using TheLibraryOfAlexandria.Services;
 
 
 namespace TheLibraryOfAlexandria.Controllers
@@ -53,7 +54,7 @@ namespace TheLibraryOfAlexandria.Controllers
         // GET: api/Orders/5
         [Authorize(Roles = "Customer, Admin, SuperAdmin")]
         [HttpGet("{id}")]
-        public async Task<ActionResult<Order>> GetOrder(int id)
+        public async Task<ActionResult<object>> GetOrder(int id)
         {
             var response = await _orderService.GetOrderByIdAsync(id);
             if (response.Success)
@@ -62,7 +63,34 @@ namespace TheLibraryOfAlexandria.Controllers
                 {
                     return NotFound("Order not found.");
                 }
-                return Ok(response.Data);
+                // Try to get payment; if not found, return null node
+                Payment? payment = null;
+                try
+                {
+                    var payResp = await HttpContext.RequestServices.GetRequiredService<IPaymentService>().GetPaymentByOrderIdAsync(id);
+                    if (payResp.Success)
+                    {
+                        payment = payResp.Data;
+                    }
+                }
+                catch {}
+
+                var order = response.Data;
+                // If shipping not present, ensure it goes as null (node empty)
+                var shipping = order.ShippingInfo; // may be null
+
+                return Ok(new
+                {
+                    id = order.Id,
+                    userId = order.UserId,
+                    status = order.Status,
+                    totalPrice = order.TotalPrice,
+                    createdAt = order.CreatedAt,
+                    updatedAt = order.UpdatedAt,
+                    orderItems = order.OrderItems,
+                    shippingInfo = shipping,
+                    payment = payment
+                });
             }
             else
             {
@@ -87,7 +115,7 @@ namespace TheLibraryOfAlexandria.Controllers
         // PUT: api/Orders/5
         [Authorize(Roles = "Admin, SuperAdmin")]
         [HttpPut("{id}")]
-        public async Task<ActionResult> PutOrder(int id, Order order)
+        public async Task<ActionResult> PutOrder(int id, [FromBody][Bind("Status")] Order order)
         {
             if (id != order.Id)
             {
@@ -97,9 +125,14 @@ namespace TheLibraryOfAlexandria.Controllers
             var response = await _orderService.UpdateOrderAsync(id, order);
             if (!response.Success)
             {
-                return NotFound(response.Message);
+                // Return structured JSON instead of plain text
+                if (string.Equals(response.Message, "Order not found.", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(response);
+                }
+                return BadRequest(response);
             }
-            return NoContent(); // Retorna um status 204 No Content como resposta para indicar sucesso na atualização
+            return NoContent(); // 204 No Content indicates update succeeded
 
         }
 

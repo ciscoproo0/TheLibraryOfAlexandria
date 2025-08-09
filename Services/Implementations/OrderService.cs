@@ -98,7 +98,7 @@ public class OrderService : IOrderService
         {
             var order = await _context.Orders
                 .Include(o => o.OrderItems)
-                .Include(o => o.ShippingInfo)  // Load shipping details
+                .Include(o => o.ShippingInfo)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null)
             {
@@ -181,6 +181,7 @@ public class OrderService : IOrderService
         {
             var order = await _context.Orders
                 .Include(o => o.OrderItems)
+                .Include(o => o.ShippingInfo)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null)
@@ -190,36 +191,33 @@ public class OrderService : IOrderService
                 return response;
             }
 
-            order.Status = updatedOrder.Status;
-            order.UpdatedAt = DateTime.UtcNow;
-            order.ShippingInfo.ShippingCost = updatedOrder.ShippingInfo.ShippingCost; // Updating shipping cost
-
-            decimal totalPrice = 0;
-            foreach (var updatedItem in updatedOrder.OrderItems)
+            // Requested status change (Order-level only). We do not update items or shipping here.
+            var requestedStatus = updatedOrder.Status?.Trim();
+            if (!string.IsNullOrWhiteSpace(requestedStatus) && requestedStatus.Equals("completed", StringComparison.OrdinalIgnoreCase))
             {
-                var existingItem = order.OrderItems.FirstOrDefault(oi => oi.Id == updatedItem.Id);
-                if (existingItem != null)
+                // Validate: to set order as completed, payment must be Completed and shipping Delivered
+                var paymentForOrder = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == order.Id);
+                var paymentState = paymentForOrder?.Status.ToString() ?? "None";
+                var targetShippingStatus = updatedOrder.ShippingInfo?.Status ?? order.ShippingInfo?.Status;
+                var shippingState = targetShippingStatus?.ToString() ?? "None";
+
+                bool isPaymentCompleted = paymentForOrder != null && paymentForOrder.Status == PaymentStatus.Completed;
+                bool isShippingDelivered = targetShippingStatus.HasValue && targetShippingStatus.Value == ShippingStatus.Delivered;
+                if (!(isPaymentCompleted && isShippingDelivered))
                 {
-                    existingItem.Quantity = updatedItem.Quantity;
-                    existingItem.Price = updatedItem.Price; // Assuming price per unit might have changed
-                    totalPrice += existingItem.Price * existingItem.Quantity;
-                }
-                else
-                {
-                    order.OrderItems.Add(new OrderItem
-                    {
-                        ProductId = updatedItem.ProductId,
-                        Quantity = updatedItem.Quantity,
-                        Price = updatedItem.Price
-                    });
-                    totalPrice += updatedItem.Price * updatedItem.Quantity;
+                    response.Success = false;
+                    response.Message = $"Cannot set order status to 'completed'. Requirements: payment must be 'Completed' and shipping must be 'Delivered'. Current states -> payment: '{paymentState}', shipping: '{shippingState}'.";
+                    return response;
                 }
             }
 
-            // Include the shipping cost in the total price
-            totalPrice += order.ShippingInfo.ShippingCost;
-
-            order.TotalPrice = totalPrice;
+            // Apply order-level updates only
+            if (!string.IsNullOrWhiteSpace(updatedOrder.Status))
+            {
+                order.Status = updatedOrder.Status;
+            }
+            order.UpdatedAt = DateTime.UtcNow;
+            // Note: TotalPrice recomputation and Shipping/Items updates are handled by their dedicated endpoints/services.
 
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();
