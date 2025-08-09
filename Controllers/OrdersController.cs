@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TheLibraryOfAlexandria.Models;
+using TheLibraryOfAlexandria.Utils;
 
 
 namespace TheLibraryOfAlexandria.Controllers
@@ -16,20 +17,37 @@ namespace TheLibraryOfAlexandria.Controllers
             _orderService = orderService;
         }
 
-        // GET: api/Order
+        // GET: api/Orders (paginated, mandatory)
         [Authorize(Roles = "Customer, Admin, SuperAdmin")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
+        public async Task<ActionResult<ServiceResponse<TheLibraryOfAlexandria.Utils.PaginatedResult<Order>>>> GetOrders(
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
+            [FromQuery] int? userId,
+            [FromQuery] string? status,
+            [FromQuery] decimal? minTotalPrice,
+            [FromQuery] decimal? maxTotalPrice,
+            [FromQuery] DateTime? createdFrom,
+            [FromQuery] DateTime? createdTo,
+            [FromQuery] DateTime? updatedFrom,
+            [FromQuery] DateTime? updatedTo
+        )
         {
-            var response = await _orderService.GetAllOrdersAsync();
-            if (response.Success)
+            if (page <= 0)
             {
-                return Ok(response.Data);
+                return BadRequest("Parameter 'page' must be greater than zero.");
             }
-            else
+            if (pageSize != 25 && pageSize != 50 && pageSize != 100)
+            {
+                return BadRequest("Parameter 'pageSize' must be one of: 25, 50, 100.");
+            }
+
+            var response = await _orderService.GetAllOrdersAsync(page, pageSize, userId, status, minTotalPrice, maxTotalPrice, createdFrom, createdTo, updatedFrom, updatedTo);
+            if (!response.Success)
             {
                 return BadRequest(response.Message);
             }
+            return Ok(response);
         }
 
         // GET: api/Orders/5

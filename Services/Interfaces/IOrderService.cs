@@ -3,7 +3,18 @@ using TheLibraryOfAlexandria.Utils;
 
 public interface IOrderService
 {
-    Task<ServiceResponse<List<Order>>> GetAllOrdersAsync();
+    Task<ServiceResponse<PaginatedResult<Order>>> GetAllOrdersAsync(
+        int page,
+        int pageSize,
+        int? userId,
+        string? status,
+        decimal? minTotalPrice,
+        decimal? maxTotalPrice,
+        DateTime? createdFrom,
+        DateTime? createdTo,
+        DateTime? updatedFrom,
+        DateTime? updatedTo
+    );
     Task<ServiceResponse<Order>> GetOrderByIdAsync(int orderId);
     Task<ServiceResponse<Order>> CreateOrderAsync(Order order);
     Task<ServiceResponse<Order>> UpdateOrderAsync(int orderId, Order order);

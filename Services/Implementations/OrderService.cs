@@ -12,23 +12,79 @@ public class OrderService : IOrderService
         _context = context;
     }
 
-    public async Task<ServiceResponse<List<Order>>> GetAllOrdersAsync()
+    public async Task<ServiceResponse<PaginatedResult<Order>>> GetAllOrdersAsync(
+        int page,
+        int pageSize,
+        int? userId,
+        string? status,
+        decimal? minTotalPrice,
+        decimal? maxTotalPrice,
+        DateTime? createdFrom,
+        DateTime? createdTo,
+        DateTime? updatedFrom,
+        DateTime? updatedTo
+    )
     {
         try
         {
-            var orders = await _context.Orders
+            var query = _context.Orders
                 .Include(o => o.OrderItems)
-                .Include(o => o.ShippingInfo)  // Include shipping details
-                .ToListAsync();
-            return new ServiceResponse<List<Order>>
+                .Include(o => o.ShippingInfo)
+                .AsQueryable();
+
+            if (userId.HasValue)
             {
-                Data = orders,
-                Message = "Retrieved all orders successfully."
+                query = query.Where(o => o.UserId == userId.Value);
+            }
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(o => o.Status == status);
+            }
+            if (minTotalPrice.HasValue)
+            {
+                query = query.Where(o => o.TotalPrice >= minTotalPrice.Value);
+            }
+            if (maxTotalPrice.HasValue)
+            {
+                query = query.Where(o => o.TotalPrice <= maxTotalPrice.Value);
+            }
+            if (createdFrom.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt >= createdFrom.Value);
+            }
+            if (createdTo.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt <= createdTo.Value);
+            }
+            if (updatedFrom.HasValue)
+            {
+                query = query.Where(o => o.UpdatedAt >= updatedFrom.Value);
+            }
+            if (updatedTo.HasValue)
+            {
+                query = query.Where(o => o.UpdatedAt <= updatedTo.Value);
+            }
+
+            query = query.OrderByDescending(o => o.CreatedAt);
+
+            var total = await query.CountAsync();
+            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            return new ServiceResponse<PaginatedResult<Order>>
+            {
+                Data = new PaginatedResult<Order>
+                {
+                    Items = items,
+                    Total = total,
+                    Page = page,
+                    PageSize = pageSize
+                },
+                Message = "Retrieved orders page successfully."
             };
         }
         catch (Exception ex)
         {
-            return new ServiceResponse<List<Order>>
+            return new ServiceResponse<PaginatedResult<Order>>
             {
                 Success = false,
                 Message = $"An error occurred while retrieving orders: {ex.Message}"
