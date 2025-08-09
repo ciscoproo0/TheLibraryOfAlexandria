@@ -35,6 +35,13 @@ namespace TheLibraryOfAlexandria.Data
                 .HasConversion(
                     v => v.ToString(),
                     v => (PaymentStatus)Enum.Parse(typeof(PaymentStatus), v));
+
+            modelBuilder.Entity<ShippingInfo>()
+                .Property(s => s.Status)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (ShippingStatus)Enum.Parse(typeof(ShippingStatus), v, true))
+                .HasDefaultValue(ShippingStatus.Preparing);
         }
 
     }
