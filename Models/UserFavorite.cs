@@ -9,17 +9,20 @@ namespace TheLibraryOfAlexandria.Models
         [Key]
         public int Id { get; set; }
 
-        [ForeignKey("UserId")]
+        // Foreign keys
         public int UserId { get; set; }
-
-        [ForeignKey("ProductId")]
         public int ProductId { get; set; }
 
+        // Navigation properties
+        [ForeignKey("UserId")]
         [JsonIgnore]
         public virtual User? User { get; set; }
 
+        [ForeignKey("ProductId")]
         [JsonIgnore]
         public virtual Product? Product { get; set; }
+
+        // Timestamp when the product was added to favorites
         public DateTime AddedAt { get; set; } = DateTime.UtcNow;
     }
 }

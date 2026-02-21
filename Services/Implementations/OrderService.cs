@@ -3,15 +3,31 @@ using TheLibraryOfAlexandria.Data;
 using TheLibraryOfAlexandria.Models;
 using TheLibraryOfAlexandria.Utils;
 
+/// <summary>
+/// OrderService implements order management operations including CRUD functionality and advanced filtering.
+/// This service handles order creation with stock management, retrieval with multiple filter criteria,
+/// status updates with business rule validation, and cascading deletion.
+/// All database operations include comprehensive error handling and transaction support.
+/// </summary>
 public class OrderService : IOrderService
 {
     private readonly ApplicationDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of OrderService with database context.
+    /// </summary>
+    /// <param name="context">Entity Framework database context for order persistence and querying.</param>
     public OrderService(ApplicationDbContext context)
     {
         _context = context;
     }
 
+    /// <summary>
+    /// Retrieves all orders with optional multi-criteria filtering.
+    /// Supports filtering by user, status, price range, and creation/update dates.
+    /// Results are ordered by creation date (newest first).
+    /// Includes all related OrderItems and ShippingInfo data via eager loading.
+    /// </summary>
     public async Task<ServiceResponse<List<Order>>> GetAllOrdersAsync(
         int? userId,
         string? status,
@@ -25,11 +41,13 @@ public class OrderService : IOrderService
     {
         try
         {
+            // Start with base query, eagerly load related entities to avoid N+1 queries
             var query = _context.Orders
                 .Include(o => o.OrderItems)
                 .Include(o => o.ShippingInfo)
                 .AsQueryable();
 
+            // Apply optional filters - all use AND logic
             if (userId.HasValue)
             {
                 query = query.Where(o => o.UserId == userId.Value);
@@ -63,6 +81,7 @@ public class OrderService : IOrderService
                 query = query.Where(o => o.UpdatedAt <= updatedTo.Value);
             }
 
+            // Sort by most recent first
             query = query.OrderByDescending(o => o.CreatedAt);
 
             var items = await query.ToListAsync();
@@ -83,6 +102,9 @@ public class OrderService : IOrderService
         }
     }
 
+    /// <summary>
+    /// Retrieves a single order by ID with all related OrderItems and ShippingInfo.
+    /// </summary>
     public async Task<ServiceResponse<Order>> GetOrderByIdAsync(int orderId)
     {
         try
@@ -115,6 +137,12 @@ public class OrderService : IOrderService
         }
     }
 
+    /// <summary>
+    /// Creates a new order with validation, stock management, and relational setup.
+    /// For each OrderItem: validates product existence and stock, decrements inventory, captures price.
+    /// Sets up ShippingInfo FK relationship and calculates total including shipping cost.
+    /// All changes are transactional - failure at any step rolls back the entire order.
+    /// </summary>
     public async Task<ServiceResponse<Order>> CreateOrderAsync(Order order)
     {
         var serviceResponse = new ServiceResponse<Order>();
@@ -122,7 +150,7 @@ public class OrderService : IOrderService
         {
             decimal totalPrice = 0;
 
-            // Process each order line
+            // Process each order line: validate stock and update inventory
             foreach (var item in order.OrderItems)
             {
                 var product = await _context.Products.FindAsync(item.ProductId);
@@ -133,10 +161,11 @@ public class OrderService : IOrderService
                     return serviceResponse;
                 }
 
+                // Capture price at order time for historical accuracy
                 item.Price = product.Price;
                 totalPrice += item.Price * item.Quantity;
 
-                // Update stock
+                // Decrement product stock
                 product.StockQuantity -= item.Quantity;
             }
 
@@ -144,11 +173,12 @@ public class OrderService : IOrderService
             if (order.ShippingInfo != null)
             {
                 order.ShippingInfo.OrderId = order.Id; // Ensures FK constraint is satisfied
+                // Add shipping cost to total price (prevents null reference exception)
+                totalPrice += order.ShippingInfo.ShippingCost;
             }
 
-            totalPrice += order.ShippingInfo.ShippingCost;
-
-            order.TotalPrice = totalPrice; // Set total price
+            // Set computed total price
+            order.TotalPrice = totalPrice;
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -165,6 +195,12 @@ public class OrderService : IOrderService
         return serviceResponse;
     }
 
+    /// <summary>
+    /// Updates an existing order with business rule validation for status transitions.
+    /// When transitioning to "completed", validates that payment is Completed and shipping is Delivered.
+    /// Only order-level properties are updated here (Status); items/shipping use dedicated endpoints.
+    /// Automatically updates UpdatedAt timestamp on successful save.
+    /// </summary>
     public async Task<ServiceResponse<Order>> UpdateOrderAsync(int orderId, Order updatedOrder)
     {
         var response = new ServiceResponse<Order>();
@@ -182,11 +218,11 @@ public class OrderService : IOrderService
                 return response;
             }
 
-            // Requested status change (Order-level only). Items or shipping are not updated here.
+            // Validate status transition to "completed" requires payment completed + shipping delivered
             var requestedStatus = updatedOrder.Status?.Trim();
             if (!string.IsNullOrWhiteSpace(requestedStatus) && requestedStatus.Equals("completed", StringComparison.OrdinalIgnoreCase))
             {
-                // Validate using fresh reads to avoid stale tracked entities
+                // Use AsNoTracking to avoid stale entity issues in concurrent scenarios
                 var paymentForOrder = await _context.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.OrderId == order.Id);
                 var latestShippingStatus = await _context.ShippingInfos.AsNoTracking()
                     .Where(s => s.OrderId == order.Id)
@@ -196,6 +232,7 @@ public class OrderService : IOrderService
                 var paymentState = paymentForOrder?.Status.ToString() ?? "None";
                 var shippingState = latestShippingStatus?.ToString() ?? "None";
 
+                // Require both payment completion and delivery before marking order "completed"
                 bool isPaymentCompleted = paymentForOrder != null && paymentForOrder.Status == PaymentStatus.Completed;
                 bool isShippingDelivered = latestShippingStatus.HasValue && latestShippingStatus.Value == ShippingStatus.Delivered;
                 if (!(isPaymentCompleted && isShippingDelivered))
@@ -206,13 +243,12 @@ public class OrderService : IOrderService
                 }
             }
 
-            // Apply order-level updates only
+            // Apply order-level updates only (items/shipping managed via their services)
             if (!string.IsNullOrWhiteSpace(updatedOrder.Status))
             {
                 order.Status = updatedOrder.Status;
             }
             order.UpdatedAt = DateTime.UtcNow;
-            // Note: Total price recomputation and Shipping/Items updates are handled by their dedicated endpoints/services.
 
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();
@@ -229,6 +265,9 @@ public class OrderService : IOrderService
         return response;
     }
 
+    /// <summary>
+    /// Deletes an order and all related entities (OrderItems, Payment, ShippingInfo via cascade FK).
+    /// </summary>
     public async Task<ServiceResponse<bool>> DeleteOrderAsync(int id)
     {
         try

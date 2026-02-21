@@ -4,6 +4,11 @@ using TheLibraryOfAlexandria.Data;
 using TheLibraryOfAlexandria.Models;
 using TheLibraryOfAlexandria.Utils;
 
+/// <summary>
+/// ShoppingCartService implements shopping cart operations for customer checkout flows.
+/// Manages cart lifecycle including creation, item management, and cart clearing.
+/// Each user has one active shopping cart used to aggregate items before checkout.
+/// </summary>
 public class ShoppingCartService : IShoppingCartService
 {
     private readonly ApplicationDbContext _context;
@@ -13,15 +18,20 @@ public class ShoppingCartService : IShoppingCartService
         _context = context;
     }
 
+    /// <summary>
+    /// Creates a new empty shopping cart for a user. Validates user exists and cart doesn't already exist.
+    /// </summary>
     public async Task<ServiceResponse<ShoppingCart>> CreateCartForUserAsync(int userId)
     {
         try
         {
+            // Validate user exists
             if (await _context.Users.AnyAsync(u => u.Id == userId) == false)
             {
                 return new ServiceResponse<ShoppingCart> { Success = false, Message = "User not found." };
             }
 
+            // Prevent duplicate carts per user
             if (await _context.ShoppingCarts.AnyAsync(c => c.UserId == userId))
             {
                 return new ServiceResponse<ShoppingCart> { Success = false, Message = "Cart already exists for this user." };
@@ -44,6 +54,9 @@ public class ShoppingCartService : IShoppingCartService
         }
     }
 
+    /// <summary>
+    /// Retrieves a user's shopping cart with all items. Includes product and quantity information.
+    /// </summary>
     public async Task<ServiceResponse<ShoppingCart>> GetCartByUserIdAsync(int userId)
     {
         try
@@ -77,6 +90,9 @@ public class ShoppingCartService : IShoppingCartService
         }
     }
 
+    /// <summary>
+    /// Adds a product to cart or updates quantity if product already exists. Validates stock availability.
+    /// </summary>
     public async Task<ServiceResponse<ShoppingCartItem>> AddItemToCartAsync(int cartId, ShoppingCartItem itemDto)
     {
         try
@@ -87,12 +103,14 @@ public class ShoppingCartService : IShoppingCartService
                 return new ServiceResponse<ShoppingCartItem> { Success = false, Message = "Cart not found." };
             }
 
+            // Validate product exists
             var product = await _context.Products.FindAsync(itemDto.ProductId);
             if (product == null)
             {
                 return new ServiceResponse<ShoppingCartItem> { Success = false, Message = "Product not found." };
             }
 
+            // Validate stock availability (note: not decremented until order checkout)
             if (product.StockQuantity < itemDto.Quantity)
             {
                 return new ServiceResponse<ShoppingCartItem> { Success = false, Message = "Not enough stock available." };
@@ -116,6 +134,9 @@ public class ShoppingCartService : IShoppingCartService
         }
     }
 
+    /// <summary>
+    /// Removes a specific item from the shopping cart.
+    /// </summary>
     public async Task<ServiceResponse<bool>> RemoveItemFromCartAsync(int itemId)
     {
         try
@@ -135,6 +156,9 @@ public class ShoppingCartService : IShoppingCartService
         }
     }
 
+    /// <summary>
+    /// Clears all items from a shopping cart, leaving it empty for continued shopping or checkout.
+    /// </summary>
     public async Task<ServiceResponse<bool>> ClearCartAsync(int cartId)
     {
         try

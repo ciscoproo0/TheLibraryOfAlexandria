@@ -2,6 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using TheLibraryOfAlexandria.Data;
 using TheLibraryOfAlexandria.Models;
 using TheLibraryOfAlexandria.Utils;
+
+/// <summary>
+/// UserFavoriteService implements favorites (wishlist) management operations.
+/// Allows users to save favorite Magic: The Gathering products for later purchase consideration.
+/// </summary>
 public class UserFavoriteService : IUserFavoriteService
 {
     private readonly ApplicationDbContext _context;
@@ -11,6 +16,7 @@ public class UserFavoriteService : IUserFavoriteService
         _context = context;
     }
 
+    /// <summary>Retrieves all favorites for a user with related product and user information.</summary>
     public async Task<ServiceResponse<List<UserFavorite>>> GetUserFavoritesAsync(int userId)
     {
         try
@@ -34,6 +40,7 @@ public class UserFavoriteService : IUserFavoriteService
         }
     }
 
+    /// <summary>Retrieves a single favorite by ID.</summary>
     public async Task<ServiceResponse<UserFavorite>> GetFavoriteByIdAsync(int favoriteId)
     {
         try
@@ -59,6 +66,7 @@ public class UserFavoriteService : IUserFavoriteService
         }
     }
 
+    /// <summary>Adds a product to a user's favorites list with duplicate prevention.</summary>
     public async Task<ServiceResponse<UserFavorite>> AddFavoriteAsync(UserFavorite favorite)
     {
         var response = new ServiceResponse<UserFavorite>();
@@ -82,7 +90,7 @@ public class UserFavoriteService : IUserFavoriteService
         return response;
     }
 
-
+    /// <summary>Removes a favorite from a user's favorites list.</summary>
     public async Task<ServiceResponse<bool>> RemoveFavoriteAsync(int favoriteId)
     {
         try

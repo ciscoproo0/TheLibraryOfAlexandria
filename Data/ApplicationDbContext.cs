@@ -54,8 +54,55 @@ namespace TheLibraryOfAlexandria.Data
             // 1:1 relationship Order -> ShippingInfo with FK on ShippingInfo.OrderId
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.ShippingInfo)
-                .WithOne()
+                .WithOne(s => s.Order)
                 .HasForeignKey<ShippingInfo>(s => s.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Order -> OrderItem relationship
+            modelBuilder.Entity<Order>()
+                .HasMany(o => o.OrderItems)
+                .WithOne(oi => oi.Order)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Payment -> Order relationship
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.Order)
+                .WithMany()
+                .HasForeignKey(p => p.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ShoppingCart -> User relationship
+            modelBuilder.Entity<ShoppingCart>()
+                .HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ShoppingCartItem relationships
+            modelBuilder.Entity<ShoppingCartItem>()
+                .HasOne(i => i.ShoppingCart)
+                .WithMany(c => c.Items)
+                .HasForeignKey(i => i.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ShoppingCartItem>()
+                .HasOne(i => i.Product)
+                .WithMany()
+                .HasForeignKey(i => i.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // UserFavorite relationships
+            modelBuilder.Entity<UserFavorite>()
+                .HasOne(uf => uf.User)
+                .WithMany()
+                .HasForeignKey(uf => uf.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserFavorite>()
+                .HasOne(uf => uf.Product)
+                .WithMany()
+                .HasForeignKey(uf => uf.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
 

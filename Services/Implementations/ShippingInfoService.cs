@@ -3,6 +3,11 @@ using TheLibraryOfAlexandria.Data;
 using TheLibraryOfAlexandria.Models;
 using TheLibraryOfAlexandria.Utils;
 
+/// <summary>
+/// ShippingInfoService implements shipping information management operations.
+/// Tracks shipping details, status transitions, and delivery information for orders.
+/// Supports status lifecycle: Preparing → Shipped → Delivered.
+/// </summary>
 public class ShippingInfoService : IShippingInfoService
 {
     private readonly ApplicationDbContext _context;
@@ -12,6 +17,7 @@ public class ShippingInfoService : IShippingInfoService
         _context = context;
     }
 
+    /// <summary>Creates shipping information record for an order.</summary>
     public async Task<ServiceResponse<ShippingInfo>> CreateShippingInfoAsync(ShippingInfo shippingInfo)
     {
         try
@@ -26,6 +32,7 @@ public class ShippingInfoService : IShippingInfoService
         }
     }
 
+    /// <summary>Retrieves all shipping records for all orders.</summary>
     public async Task<ServiceResponse<List<ShippingInfo>>> GetAllShippingInfosAsync()
     {
         try
@@ -39,6 +46,7 @@ public class ShippingInfoService : IShippingInfoService
         }
     }
 
+    /// <summary>Retrieves a single shipping record by ID.</summary>
     public async Task<ServiceResponse<ShippingInfo>> GetShippingInfoByIdAsync(int id)
     {
         try
@@ -56,6 +64,10 @@ public class ShippingInfoService : IShippingInfoService
         }
     }
 
+    /// <summary>
+    /// Updates shipping information including status transitions and tracking details.
+    /// Maintains existing tracking number if not explicitly provided.
+    /// </summary>
     public async Task<ServiceResponse<ShippingInfo>> UpdateShippingInfoAsync(int id, ShippingInfo updated)
     {
         try
@@ -66,8 +78,11 @@ public class ShippingInfoService : IShippingInfoService
                 return new ServiceResponse<ShippingInfo> { Success = false, Message = "Shipping info not found." };
             }
 
+            // Update status (Preparing → Shipped → Delivered)
             entity.Status = updated.Status;
+            // Update tracking number if provided, otherwise retain existing value
             entity.TrackingNumber = string.IsNullOrWhiteSpace(updated.TrackingNumber) ? entity.TrackingNumber : updated.TrackingNumber;
+            // Update shipping cost
             entity.ShippingCost = updated.ShippingCost;
 
             await _context.SaveChangesAsync();
@@ -79,6 +94,7 @@ public class ShippingInfoService : IShippingInfoService
         }
     }
 
+    /// <summary>Deletes a shipping record from the system.</summary>
     public async Task<ServiceResponse<bool>> DeleteShippingInfoAsync(int id)
     {
         try
@@ -98,6 +114,7 @@ public class ShippingInfoService : IShippingInfoService
         }
     }
 
+    /// <summary>Retrieves the shipping information for a specific order.</summary>
     public async Task<ServiceResponse<ShippingInfo>> GetShippingInfoByOrderIdAsync(int orderId)
     {
         try
@@ -115,5 +132,3 @@ public class ShippingInfoService : IShippingInfoService
         }
     }
 }
-
-

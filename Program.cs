@@ -24,14 +24,19 @@ var builder = WebApplication.CreateBuilder(args);
 Console.WriteLine($"Current Environment: {builder.Environment.EnvironmentName}");
 
 // Database connection string retrieved from environment variables
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "DATABASE_URL";
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? throw new InvalidOperationException("DB_CONNECTION_STRING environment variable is not configured.");
 
 //for heroku deploy
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+if (!int.TryParse(port, out var portNumber) || portNumber < 1 || portNumber > 65535)
+{
+    throw new InvalidOperationException($"Invalid PORT value: {port}. Must be a number between 1 and 65535.");
+}
 builder.WebHost.UseKestrel()
       .ConfigureKestrel(serverOptions =>
       {
-          serverOptions.ListenAnyIP(int.Parse(port));
+          serverOptions.ListenAnyIP(portNumber);
       });
 
 
@@ -41,8 +46,8 @@ builder.Services.AddControllers(); // Adds controllers to the services collectio
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString) // Configure the context to connect to PostgreSQL database
            .LogTo(Console.WriteLine, new[] { DbLoggerCategory.Database.Command.Name }, LogLevel.Information) // Log database command details
-           .EnableSensitiveDataLogging() // Enables sensitive data in logs
-           .EnableDetailedErrors()); // Enables detailed errors
+           .EnableDetailedErrors() // Enables detailed errors
+           .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())); // Enables sensitive data in logs only in Development
 
 // Configure authentication using JWT
 builder.Services.AddAuthentication(options =>
@@ -51,15 +56,22 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
+    var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+        ?? throw new InvalidOperationException("JWT_SECRET_KEY environment variable is not configured.");
+    var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+        ?? throw new InvalidOperationException("JWT_ISSUER environment variable is not configured.");
+    var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+        ?? throw new InvalidOperationException("JWT_AUDIENCE environment variable is not configured.");
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true, // Validate the server (issuer) that created the token
-        ValidateAudience = true, // Validate the recipient of the token is authorized to receive
-        ValidateLifetime = true, // Validate the token is not expired
-        ValidateIssuerSigningKey = true, // Validate signature of the token
-        ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"), // The issuer (signer) of the token
-        ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"), // The audience of the token
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_SECRET_KEY"))) // The key used to validate the token
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
     };
 });
 
@@ -118,11 +130,19 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = new[]
+    {
+        "http://localhost:8080",
+        "http://localhost:3000",
+        Environment.GetEnvironmentVariable("ALLOWED_ORIGINS") ?? ""
+    }.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+
     options.AddPolicy("AllowFrontend",
         builder => builder
-            .AllowAnyOrigin() //restrict to the specific origin in the future
+            .WithOrigins(allowedOrigins)
             .AllowAnyMethod()
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowCredentials());
 });
 
 // Swagger documentation setup

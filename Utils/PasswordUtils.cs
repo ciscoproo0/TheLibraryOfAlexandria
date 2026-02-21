@@ -1,37 +1,30 @@
-using System.Security.Cryptography;
-using System.Text;
+using System;
 
 namespace TheLibraryOfAlexandria.Utils
 {
-    // PasswordUtils class provides utilities for hashing and verifying passwords
+    // PasswordUtils class provides utilities for hashing and verifying passwords using bcrypt
     public class PasswordUtils
     {
-        // HashPassword method takes a plain text password and returns its SHA256 hash
+        // HashPassword method takes a plain text password and returns a bcrypt hash with salt
         public string HashPassword(string password)
         {
-            // Using SHA256 cryptographic service provider
-            using (var sha256 = SHA256.Create())
-            {
-                // Compute the hash of the password
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                // Convert the byte array of the hashed password into a base64 string
-                return Convert.ToBase64String(hashedBytes);
-            }
+            if (string.IsNullOrEmpty(password))
+                throw new ArgumentException("Password cannot be null or empty.", nameof(password));
+
+            // Use workFactor of 12 for strong hashing (2^12 = 4096 iterations)
+            return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
         }
 
-        // VerifyPassword method checks if a plain text password matches a previously hashed password
+        // VerifyPassword method checks if a plain text password matches a bcrypt hash
         public bool VerifyPassword(string password, string passwordHash)
         {
-            // Using SHA256 cryptographic service provider
-            using (var sha256 = SHA256.Create())
-            {
-                // Compute the hash of the input password
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                // Convert the byte array of the hashed password into a base64 string
-                var hashedPassword = Convert.ToBase64String(hashedBytes);
-                // Compare the newly hashed password with the stored hash
-                return string.Equals(hashedPassword, passwordHash);
-            }
+            if (string.IsNullOrEmpty(password))
+                throw new ArgumentException("Password cannot be null or empty.", nameof(password));
+            if (string.IsNullOrEmpty(passwordHash))
+                throw new ArgumentException("Password hash cannot be null or empty.", nameof(passwordHash));
+
+            // BCrypt.Verify automatically handles salt comparison
+            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
         }
     }
 }

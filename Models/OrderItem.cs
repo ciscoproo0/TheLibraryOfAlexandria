@@ -9,14 +9,19 @@ namespace TheLibraryOfAlexandria.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
+        // Foreign keys
         public int OrderId { get; set; }
-        [ForeignKey("OrderId")]
-
         public int ProductId { get; set; }
-        [ForeignKey("ProductId")]
 
+        // Order item details
         public int Quantity { get; set; }
-        
         public decimal Price { get; set; }
+
+        // Navigation properties
+        [ForeignKey("OrderId")]
+        public virtual Order? Order { get; set; }
+
+        [ForeignKey("ProductId")]
+        public virtual Product? Product { get; set; }
     }
 }
